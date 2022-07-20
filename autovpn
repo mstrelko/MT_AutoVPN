@@ -1,12 +1,13 @@
 # Set local variables
 :local firstInterface "l2tp-out2";
+:local vpnlist "hidemyname_server";
 :local pingTo1 "8.8.8.8";
 :local pingTo2 "8.8.4.4";
 :local pingCount 5;
 :local stableConnectFrom 70;
 :local prefix ">>> ";
 :local random [/tool fetch url="https://www.random.org/integers/\?num=1&min=0&max=118&col=1&base=10&format=plain&rnd=new" as-value output=user];
-:local myarr [:toarray [/ip firewall address-list find list=hidemyname_server]];
+:local myarr [:toarray [/ip firewall address-list find list=$vpnlist]];
 :local num [pick $random 0];
 :local id [pick $myarr [pick $num]];
 :local l2tpserver [/ip fi ad get $id address];
