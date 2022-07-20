@@ -1,0 +1,43 @@
+# Set local variables
+:local firstInterface "l2tp-out2";
+:local pingTo1 "8.8.8.8";
+:local pingTo2 "8.8.4.4";
+:local pingCount 5;
+:local stableConnectFrom 70;
+:local prefix ">>> ";
+:local random [/tool fetch url="https://www.random.org/integers/\?num=1&min=0&max=118&col=1&base=10&format=plain&rnd=new" as-value output=user];
+:local myarr [:toarray [/ip firewall address-list find list=hidemyname_server]];
+:local num [pick $random 0];
+:local id [pick $myarr [pick $num]];
+:local l2tpserver [/ip fi ad get $id address];
+:local l2tpcom [/ip fi ad get $id comment];
+
+:log info ($prefix . "Test VPN, START PING to $pingTo1 & $pingTo2");
+
+# Check FIRST interface
+/interface l2tp-client {
+    :if ( [get $firstInterface disable] = true) do={
+        set $firstInterface disable=no;
+        :delay 5s;
+    }
+}
+
+/ip route {
+
+    # Get ping successfully packets. In percent
+    :local pingStatus ((( [/ping $pingTo1 interface=$firstInterface count=$pingCount] + [/ping $pingTo2 interface=$firstInterface count=$pingCount] ) / ($pingCount * 2)) * 100);
+    # Check Internet
+    :if ( $pingStatus < $stableConnectFrom) do={
+
+        :log info ($prefix . "VPN Down");
+        /interface l2tp-client set connect-to=$l2tpserver $firstInterface
+        /interface l2tp-client set comment=$l2tpcom $firstInterface
+        :log info ($prefix . "changeL2TPserver");
+        /interface l2tp-client set $firstInterface disable=yes;
+        :delay 1s;
+        /interface l2tp-client set $firstInterface disable=no;
+        :log info ($prefix . "reconnectL2TP");
+    }
+}
+
+:log info ($prefix . "END PING VPN");
